@@ -1,0 +1,35 @@
+stages:
+  - build
+  - deploy
+
+variables:
+  POETRY_VERSION: 1.7.1
+  POETRY_NO_INTERACTION: 1
+  POETRY_VIRTUALENVS_CREATE: "false"
+
+.image:
+  image: python:3.9.7-slim  # matches latest python3-pip in teltonika
+
+before_script:
+  - pip install poetry==$POETRY_VERSION --no-cache-dir -q
+
+build_package:
+  extends: .image
+  stage: build
+  script:
+    - poetry config repositories.gitlab https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/packages/pypi
+    - poetry build -f wheel
+  artifacts:
+    paths:
+      - dist/*.whl
+
+deploy_package:
+  extends: .image
+  stage: deploy
+  script:
+    - poetry build
+    - poetry config repositories.gitlab "https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/packages/pypi"
+    - poetry config http-basic.gitlab gitlab-ci-token "$CI_JOB_TOKEN"
+    - poetry publish --repository gitlab
+  only:
+    - main

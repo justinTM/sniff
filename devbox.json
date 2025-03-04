@@ -1,0 +1,50 @@
+{
+  "packages": [
+    "python@3.9.6",
+    // "python39Packages.ipython@latest",
+    "tailscale@1",
+    // "pyenv@2.3.36",
+    // "colima@latest",
+    "python39Packages.ipython@7",
+    "poetry@1.7.1",
+    "jq@1.7.1"
+  ],
+  "shell": {
+    "init_hook": [
+      // "pyenv shell 3.9.7 || true",
+      "source .venv/bin/activate"
+    ],
+    "scripts": {
+      "devices": [
+        "ts_json=$( tailscale status --self=false --json )",
+        "[ \"$(echo $ts_json | jq '.Peer? | has(0)')\" = 'false' ] && echo 'Error: no other tailscale devices :(' >&2 && exit 1",
+        "echo $ts_json | jq -r '.Peer? | [to_entries[].value | select(.Online == true)] | sort_by(.HostName) | .[] | \"\\(.TailscaleIPs[0]) \t (\\(.HostName))\"'",
+      ],
+      "upload": [
+        "devbox run devices && read -p 'enter tailscale device IP: ' ip_address",
+        "poetry build -f wheel && filepath=$( ls dist/*.whl ) && filename=$(basename $filepath)",
+        "ssh root@${ip_address} 'mkdir -p /opt/sniff'",
+        "[ -z $filepath ] || scp $filepath root@${ip_address}:/opt/sniff/${filename}",
+        "ssh root@${ip_address} \"cd /opt/sniff && pip install $filename --force-reinstall\"",
+      ],
+      "ssh": [
+        "[ -z \"$SNIFF_TS_DEFAULT_IP_ADDRESS\" ] && devbox run devices && read -p 'enter tailscale device IP: ' ip_address",
+        "ssh root@${ip_address:-$SNIFF_TS_DEFAULT_IP_ADDRESS} $@",
+      ],
+      "logs": [
+        "tempfile=$(mktemp)",
+        "devbox run devices && read -p 'enter tailscale device IP: ' ip_address",
+        "scp root@${ip_address}:/var/log/sniff.log $tempfile && echo $tempfile",
+      ],
+      "scp": [
+        // optional port arg eg. `-p 222`, and positional filename arg"
+        "echo args=$@",
+        "while [ \"$1\" != '' ]; do case $1 in --axis ) port=2222; shift 1;; * ) filename=$1; shift;; esac done",
+        "devbox run devices && read -p 'enter tailscale device IP: ' ip_address || exit 1",
+        "destination=${2:-$(basename $filename)}",
+        "read -p \"copy $filename to $destination? [y/n]: \" yn && if [ \"$yn\" != 'y' ]; then echo exiting && exit 0; fi",
+        "scp -P ${port:-22} root@${ip_address}:$filename $destination"
+      ]
+    },
+  },
+}

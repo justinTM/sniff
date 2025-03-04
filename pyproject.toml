@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "sniff"
+version = "0.2.0"
+description = "Send device signals from Teltonika router to AWS Lambda via HTTP"
+authors = ["justin <github.com/justinTM>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+dpath = "^2.1.6"
+
+[tool.poetry.scripts]
+sniff = 'sniff.cli.sniff:main'
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

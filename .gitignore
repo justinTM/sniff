@@ -1,0 +1,26 @@
+# AWS secrets
+**/.aws/**
+**secret**
+
+
+# devbox
+.bash_history
+
+# python artifacts
+dist/
+**/*.zip
+__pycache__
+dist/*.whl
+.venv/
+
+# documentation
+public/
+docs/_build/
+*.rst
+
+# macOS
+.DS_Store
+
+.gitlab-ci-local/
+.devbox/
+devbox.lock
